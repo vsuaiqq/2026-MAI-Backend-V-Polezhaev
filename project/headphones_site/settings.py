@@ -87,6 +87,19 @@ ES_INDEX = os.environ.get('ES_INDEX', 'products')
 REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
 SEARCH_CACHE_TTL = int(os.environ.get('SEARCH_CACHE_TTL', '60'))
 
+CENTRIFUGO_SECRET = os.environ.get(
+    'CENTRIFUGO_TOKEN_HMAC_SECRET_KEY',
+    'dev_hmac_secret_key_min_32_characters_long!',
+)
+CENTRIFUGO_API_KEY = os.environ.get(
+    'CENTRIFUGO_API_KEY',
+    'dev_centrifugo_api_key_________________',
+)
+CENTRIFUGO_PUBLISH_URL = os.environ.get(
+    'CENTRIFUGO_PUBLISH_URL',
+    'http://localhost:9000/api/publish',
+)
+
 LOGIN_URL = '/web/login/'
 LOGIN_REDIRECT_URL = '/web/profile/'
 LOGOUT_REDIRECT_URL = '/web/login/'
@@ -97,6 +110,7 @@ LOGIN_EXEMPT_URLS = [
     r'^/web/login/?$',
     r'^/web/feed/?$',
     r'^/web/search/?$',
+    r'^/web/products/live/?$',
     r'^/web/products/\d+/?$',
     r'^/web/categories/[-\w]+/?$',
     r'^/api/search/?$',

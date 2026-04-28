@@ -1,0 +1,45 @@
+{% extends "catalog/base.html" %}
+{% block title %}Каталог (live){% endblock %}
+{% block content %}
+<style>
+    h1 { font-size: 1.5rem; }
+    table { border-collapse: collapse; width: 100%; margin-top: 12px; }
+    th, td { border: 1px solid #ccc; padding: 8px 10px; text-align: left; }
+    th { background: #f4f4f4; }
+</style>
+
+<h1>Все продукты</h1>
+
+<table id="plist">
+    <thead><tr><th>ID</th><th>Название</th><th>Цена</th><th>Категория</th></tr></thead>
+    <tbody>
+    {% for p in products %}
+        <tr data-id="{{ p.id }}"><td>{{ p.id }}</td><td>{{ p.title }}</td><td>{{ p.price }}</td><td>{{ p.category.slug }}</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<script src="https://unpkg.com/centrifuge@5.2.0/dist/centrifuge.js"></script>
+<script>
+(function() {
+  var token = "{{ centrifugo_token|escapejs }}";
+  var channel = "public:products";
+  var ws = (location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/connection/websocket";
+  function addRow(p) {
+    var tb = document.querySelector("#plist tbody");
+    if (!tb || document.querySelector("#plist tr[data-id='" + p.id + "']")) return;
+    var tr = document.createElement("tr");
+    tr.setAttribute("data-id", p.id);
+    tr.innerHTML = "<td>" + p.id + "</td><td>" + (p.title || "") + "</td><td>" + (p.price || "") + "</td><td>" + (p.category || "") + "</td>";
+    tb.appendChild(tr);
+  }
+  var centrifuge = new Centrifuge(ws, { token: token });
+  var sub = centrifuge.newSubscription(channel);
+  sub.on("publication", function(ctx) {
+    if (ctx.data && ctx.data.product) addRow(ctx.data.product);
+  });
+  sub.subscribe();
+  centrifuge.connect();
+})();
+</script>
+{% endblock %}

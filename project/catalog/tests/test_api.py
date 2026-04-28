@@ -33,8 +33,9 @@ class ProductAPITests(TestCase):
         response = self.client.get("/api/products/999999/")
         self.assertEqual(response.status_code, 404)
 
+    @patch("catalog.views_api.publish_product")
     @patch("catalog.views_api.index_product")
-    def test_create_indexes_in_es(self, mock_index):
+    def test_create_indexes_in_es(self, mock_index, mock_publish):
         payload = {
             "title": "Sony WH-1000XM5",
             "description": "шумодав",
@@ -45,9 +46,11 @@ class ProductAPITests(TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertTrue(Product.objects.filter(title="Sony WH-1000XM5").exists())
         mock_index.assert_called_once()
+        mock_publish.assert_called_once()
 
+    @patch("catalog.views_api.publish_product")
     @patch("catalog.views_api.index_product")
-    def test_create_invalid(self, _mock_index):
+    def test_create_invalid(self, _mock_index, _mock_publish):
         response = self.client.post("/api/products/create/", {}, format="json")
         self.assertEqual(response.status_code, 400)
 
@@ -172,7 +175,14 @@ class MiddlewareTests(TestCase):
         self.assertIn("/web/login/", response.url)
 
     def test_anon_can_browse_public_endpoints(self):
-        for url in ["/api/products/", "/api/categories/", "/web/", "/web/feed/", "/web/search/"]:
+        for url in [
+            "/api/products/",
+            "/api/categories/",
+            "/web/",
+            "/web/feed/",
+            "/web/search/",
+            "/web/products/live/",
+        ]:
             response = self.client.get(url)
             self.assertEqual(response.status_code, 200, msg=url)
 
@@ -198,6 +208,12 @@ class WebViewTests(TestCase):
     def test_product_page(self):
         response = self.client.get("/web/products/1/")
         self.assertEqual(response.status_code, 200)
+
+    def test_live_products_page(self):
+        response = self.client.get("/web/products/live/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "public:products")
+        self.assertContains(response, "centrifuge.js")
 
     @patch("catalog.views_web.search_products")
     def test_search_page_renders_results(self, mock_search):

@@ -1,0 +1,6 @@
+FROM centrifugo/centrifugo:v5.4.9 AS upstream
+FROM alpine:3.19
+RUN apk add --no-cache netcat-openbsd
+COPY --from=upstream /centrifugo /usr/local/bin/centrifugo
+EXPOSE 8000
+CMD ["/usr/local/bin/centrifugo", "-c", "/centrifugo/config.json"]

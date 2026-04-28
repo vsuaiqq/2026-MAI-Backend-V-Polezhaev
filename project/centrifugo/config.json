@@ -1,0 +1,13 @@
+{
+  "token_hmac_secret_key": "dev_hmac_secret_key_min_32_characters_long!",
+  "api_key": "dev_centrifugo_api_key_________________",
+  "allowed_origins": ["http://localhost:8080", "http://127.0.0.1:8080"],
+  "channel": {
+    "namespaces": [
+      {
+        "name": "public",
+        "allow_subscribe_for_client": true
+      }
+    ]
+  }
+}

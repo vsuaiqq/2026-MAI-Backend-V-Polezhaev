@@ -38,6 +38,19 @@ services:
       retries: 10
     restart: unless-stopped
 
+  centrifugo:
+    build:
+      context: .
+      dockerfile: Dockerfile.centrifugo
+    volumes:
+      - ./centrifugo/config.json:/centrifugo/config.json:ro
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 8000 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
   web:
     build: .
     environment:
@@ -48,6 +61,9 @@ services:
       DB_PASSWORD: app
       ES_URL: http://elasticsearch:9200
       REDIS_URL: redis://redis:6379/0
+      CENTRIFUGO_TOKEN_HMAC_SECRET_KEY: dev_hmac_secret_key_min_32_characters_long!
+      CENTRIFUGO_API_KEY: dev_centrifugo_api_key_________________
+      CENTRIFUGO_PUBLISH_URL: http://centrifugo:8000/api/publish
       DJANGO_DEBUG: "1"
       DJANGO_ALLOWED_HOSTS: "*"
       SOCIAL_AUTH_GOOGLE_OAUTH2_KEY: ${SOCIAL_AUTH_GOOGLE_OAUTH2_KEY:-}
@@ -58,6 +74,8 @@ services:
       elasticsearch:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      centrifugo:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8000/web/ || exit 1"]
@@ -76,6 +94,8 @@ services:
       - "8080:8080"
     depends_on:
       web:
+        condition: service_healthy
+      centrifugo:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/web/ || exit 1"]

@@ -1,4 +1,4 @@
-.PHONY: build up down migrate makemigrations logs ps shell test coverage coverage-html
+.PHONY: build up down migrate makemigrations seed logs ps shell test coverage coverage-html
 
 build:
 	docker compose build

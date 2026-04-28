@@ -2,6 +2,8 @@ from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
+from .centrifugo import build_connection_token
+from .models import Product
 from .search_backend import search_products
 
 
@@ -20,6 +22,18 @@ def search_page(request):
         request,
         "catalog/search.html",
         {"q": q, "count": len(results), "results": results},
+    )
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def live_products(request):
+    products = Product.objects.select_related("category").all()
+    token = build_connection_token(request.user)
+    return render(
+        request,
+        "catalog/live_products.html",
+        {"products": products, "centrifugo_token": token},
     )
 
 

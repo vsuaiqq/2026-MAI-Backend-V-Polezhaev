@@ -3,6 +3,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from rest_framework import generics
 
+from .centrifugo import publish_product
 from .models import Category, Product
 from .search_backend import index_product, search_products
 from .serializers import CategorySerializer, ProductSerializer
@@ -23,6 +24,7 @@ class ProductCreateView(generics.CreateAPIView):
             index_product(product)
         except Exception:
             pass
+        publish_product(ProductSerializer(product).data)
 
 
 class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
