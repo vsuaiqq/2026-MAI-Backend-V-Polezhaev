@@ -11,6 +11,12 @@ def home(request):
 
 @csrf_exempt
 @require_http_methods(["GET"])
+def login_page(request):
+    return render(request, "catalog/login.html")
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
 def feed(request):
     return render(request, "catalog/feed.html")
 
@@ -36,4 +42,5 @@ def profile(request):
 @csrf_exempt
 @require_http_methods(["GET", "POST"])
 def favorites(request):
-    return render(request, "catalog/favorites.html", {"method": request.method})
+    products = request.user.favorites.all()
+    return render(request, "catalog/favorites.html", {"products": products})

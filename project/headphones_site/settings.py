@@ -20,6 +20,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'social_django',
     'catalog',
 ]
 
@@ -35,6 +36,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'social_django.middleware.SocialAuthExceptionMiddleware',
+    'catalog.middleware.LoginRequiredMiddleware',
 ]
 
 ROOT_URLCONF = 'headphones_site.urls'
@@ -49,6 +52,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'social_django.context_processors.backends',
+                'social_django.context_processors.login_redirect',
             ],
         },
     },
@@ -66,6 +71,38 @@ DATABASES = {
         'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
+
+AUTHENTICATION_BACKENDS = [
+    'social_core.backends.google.GoogleOAuth2',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.environ.get('SOCIAL_AUTH_GOOGLE_OAUTH2_KEY', '')
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.environ.get('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET', '')
+SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = ['email', 'profile']
+SOCIAL_AUTH_JSONFIELD_ENABLED = True
+
+LOGIN_URL = '/web/login/'
+LOGIN_REDIRECT_URL = '/web/profile/'
+LOGOUT_REDIRECT_URL = '/web/login/'
+
+LOGIN_EXEMPT_URLS = [
+    r'^/$',
+    r'^/web/?$',
+    r'^/web/login/?$',
+    r'^/web/feed/?$',
+    r'^/web/products/\d+/?$',
+    r'^/web/categories/[-\w]+/?$',
+    r'^/api/search/?$',
+    r'^/api/products/?$',
+    r'^/api/products/\d+/?$',
+    r'^/api/categories/?$',
+    r'^/api/categories/\d+/?$',
+    r'^/admin/.*$',
+    r'^/oauth/.*$',
+    r'^/accounts/.*$',
+    r'^/static/.*$',
+]
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},

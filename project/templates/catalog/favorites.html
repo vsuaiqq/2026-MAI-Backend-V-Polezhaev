@@ -1,3 +1,12 @@
 {% extends "catalog/base.html" %}
 {% block title %}Избранное{% endblock %}
-{% block content %}<h1>Избранное</h1><p>Метод: {{ method }}</p>{% endblock %}
+{% block content %}
+<h1>Избранное</h1>
+<ul>
+    {% for p in products %}
+        <li>{{ p.title }} — {{ p.price }} ₽</li>
+    {% empty %}
+        <li>Пусто</li>
+    {% endfor %}
+</ul>
+{% endblock %}

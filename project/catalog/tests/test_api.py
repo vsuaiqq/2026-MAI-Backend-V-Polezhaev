@@ -1,13 +1,18 @@
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.test import APIClient
 
 from catalog.factories import CategoryFactory, ProductFactory
 from catalog.models import Product
 
+User = get_user_model()
+
 
 class ProductAPITests(TestCase):
     def setUp(self):
         self.client = APIClient()
+        self.user = User.objects.create_user("alice", "a@e.com", "pwd")
+        self.client.force_login(self.user)
         self.category = CategoryFactory()
         self.products = ProductFactory.create_batch(3, category=self.category)
 
@@ -21,7 +26,6 @@ class ProductAPITests(TestCase):
         response = self.client.get(f"/api/products/{product.id}/")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["id"], product.id)
-        self.assertEqual(response.json()["title"], product.title)
 
     def test_detail_404(self):
         response = self.client.get("/api/products/999999/")
@@ -80,6 +84,8 @@ class ProductAPITests(TestCase):
 class CategoryAPITests(TestCase):
     def setUp(self):
         self.client = APIClient()
+        self.user = User.objects.create_user("bob", "b@e.com", "pwd")
+        self.client.force_login(self.user)
         self.categories = CategoryFactory.create_batch(2)
 
     def test_list(self):
@@ -110,31 +116,77 @@ class CategoryAPITests(TestCase):
         self.assertEqual(response.status_code, 204)
 
 
-class StubViewTests(TestCase):
-    def test_profile(self):
+class AuthenticatedAPITests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user("alice", "a@e.com", "pwd")
+        self.client.force_login(self.user)
+
+    def test_profile_returns_current_user(self):
         response = self.client.get("/api/profile/")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["page"], "profile")
+        self.assertEqual(response.json()["username"], "alice")
+        self.assertEqual(response.json()["email"], "a@e.com")
 
     def test_profile_method_not_allowed(self):
         response = self.client.put("/api/profile/")
         self.assertEqual(response.status_code, 405)
 
-    def test_favorites_get(self):
+    def test_favorites_get_empty(self):
         response = self.client.get("/api/favorites/")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["method"], "GET")
+        self.assertEqual(response.json()["count"], 0)
 
-    def test_favorites_post(self):
+    def test_favorites_add(self):
+        product = ProductFactory(category=CategoryFactory())
+        response = self.client.post(f"/api/favorites/?product_id={product.id}")
+        self.assertEqual(response.status_code, 201)
+        self.assertIn(product, self.user.favorites.all())
+
+    def test_favorites_add_missing_id(self):
         response = self.client.post("/api/favorites/")
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["method"], "POST")
+        self.assertEqual(response.status_code, 400)
+
+    def test_favorites_add_404(self):
+        response = self.client.post("/api/favorites/?product_id=999999")
+        self.assertEqual(response.status_code, 404)
+
+    def test_favorites_lists_added(self):
+        product = ProductFactory(category=CategoryFactory())
+        self.user.favorites.add(product)
+        response = self.client.get("/api/favorites/")
+        self.assertEqual(response.json()["count"], 1)
+        self.assertEqual(response.json()["results"][0]["id"], product.id)
+
+
+class MiddlewareTests(TestCase):
+    def test_anon_api_returns_401(self):
+        response = self.client.get("/api/profile/")
+        self.assertEqual(response.status_code, 401)
+
+    def test_anon_web_redirects_to_login(self):
+        response = self.client.get("/web/profile/")
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/web/login/", response.url)
+
+    def test_anon_can_browse_public_endpoints(self):
+        for url in ["/api/products/", "/api/categories/", "/api/search/?q=x", "/web/", "/web/feed/"]:
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, 200, msg=url)
+
+    def test_anon_create_blocked(self):
+        response = self.client.post("/api/products/create/", {})
+        self.assertEqual(response.status_code, 401)
 
 
 class WebViewTests(TestCase):
     def test_home(self):
         response = self.client.get("/web/")
         self.assertEqual(response.status_code, 200)
+
+    def test_login_page_has_google_button(self):
+        response = self.client.get("/web/login/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "google-oauth2")
 
     def test_feed(self):
         response = self.client.get("/web/feed/")

@@ -49,10 +49,27 @@ def search(request):
 @csrf_exempt
 @require_http_methods(["GET"])
 def profile(request):
-    return JsonResponse({"page": "profile"})
+    user = request.user
+    return JsonResponse({
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+    })
 
 
 @csrf_exempt
 @require_http_methods(["GET", "POST"])
 def favorites(request):
-    return JsonResponse({"page": "favorites", "method": request.method})
+    if request.method == "POST":
+        product_id = request.POST.get("product_id") or request.GET.get("product_id")
+        if not product_id:
+            return JsonResponse({"detail": "product_id required"}, status=400)
+        try:
+            product = Product.objects.get(pk=product_id)
+        except Product.DoesNotExist:
+            return JsonResponse({"detail": "Не найдено"}, status=404)
+        request.user.favorites.add(product)
+        return JsonResponse({"detail": "added", "product_id": product.id}, status=201)
+
+    serializer = ProductSerializer(request.user.favorites.all(), many=True)
+    return JsonResponse({"count": len(serializer.data), "results": list(serializer.data)})

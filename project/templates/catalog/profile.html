@@ -1,3 +1,6 @@
 {% extends "catalog/base.html" %}
 {% block title %}Профиль{% endblock %}
-{% block content %}<h1>Личный кабинет</h1>{% endblock %}
+{% block content %}
+<h1>Личный кабинет</h1>
+<p>{{ user.username }} ({{ user.email }})</p>
+{% endblock %}

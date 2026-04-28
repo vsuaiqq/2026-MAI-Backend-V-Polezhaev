@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 
@@ -20,6 +21,11 @@ class Product(models.Model):
         Category,
         on_delete=models.CASCADE,
         related_name="products",
+    )
+    favorited_by = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name="favorites",
+        blank=True,
     )
     created_at = models.DateTimeField(auto_now_add=True)
 

@@ -24,6 +24,8 @@ services:
       DB_PASSWORD: app
       DJANGO_DEBUG: "1"
       DJANGO_ALLOWED_HOSTS: "*"
+      SOCIAL_AUTH_GOOGLE_OAUTH2_KEY: ${SOCIAL_AUTH_GOOGLE_OAUTH2_KEY:-}
+      SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET: ${SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET:-}
     depends_on:
       db:
         condition: service_healthy
@@ -38,6 +40,8 @@ services:
     image: nginx:alpine
     volumes:
       - ./nginx.docker.conf:/etc/nginx/nginx.conf:ro
+      - ./.htpasswd:/etc/nginx/.htpasswd:ro
+      - ./public:/usr/share/nginx/public:ro
     ports:
       - "8080:8080"
     depends_on:
