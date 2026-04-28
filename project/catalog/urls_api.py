@@ -5,7 +5,9 @@ from . import views_api
 app_name = "api"
 
 urlpatterns = [
+    path("search/", views_api.search, name="search"),
     path("products/", views_api.product_list, name="product-list"),
+    path("products/create/", views_api.product_create, name="product-create"),
     path("products/<int:product_id>/", views_api.product_detail, name="product-detail"),
     path("categories/<slug:slug>/", views_api.category_detail, name="category"),
     path("profile/", views_api.profile, name="profile"),
