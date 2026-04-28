@@ -1,0 +1,46 @@
+{% extends "catalog/base.html" %}
+{% block title %}Поиск{% endblock %}
+{% block content %}
+<style>
+    .search-form { display: flex; gap: 8px; margin: 16px 0; }
+    .search-form input[type=text] {
+        flex: 1; padding: 8px 12px; font-size: 16px;
+        border: 1px solid #ccc; border-radius: 4px;
+    }
+    .search-form button {
+        padding: 8px 20px; font-size: 16px; cursor: pointer;
+        background: #2d7ff9; color: #fff; border: 0; border-radius: 4px;
+    }
+    .results { list-style: none; padding: 0; }
+    .results li {
+        border: 1px solid #e3e3e3; border-radius: 6px;
+        padding: 12px 16px; margin-bottom: 10px;
+    }
+    .results .title { font-weight: 600; font-size: 18px; }
+    .results .meta  { color: #666; font-size: 14px; margin-top: 4px; }
+    .results .desc  { margin-top: 6px; color: #333; }
+    .empty { color: #888; font-style: italic; }
+</style>
+
+<h1>Поиск наушников</h1>
+
+<form class="search-form" method="get" action="{% url 'web:search' %}">
+    <input type="text" name="q" value="{{ q }}" placeholder="sony, шумодав, tws…" autofocus>
+    <button type="submit">Найти</button>
+</form>
+
+{% if q %}
+    <p>Найдено: <strong>{{ count }}</strong> по запросу «{{ q }}»</p>
+    <ul class="results">
+        {% for p in results %}
+            <li>
+                <div class="title">{{ p.title }}</div>
+                <div class="meta">{{ p.price }} ₽ · {{ p.category }}</div>
+                <div class="desc">{{ p.description }}</div>
+            </li>
+        {% empty %}
+            <li class="empty">Ничего не найдено</li>
+        {% endfor %}
+    </ul>
+{% endif %}
+{% endblock %}

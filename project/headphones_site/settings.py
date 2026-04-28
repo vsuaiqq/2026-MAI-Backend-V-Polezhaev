@@ -82,6 +82,11 @@ SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.environ.get('SOCIAL_AUTH_GOOGLE_OAUTH2_SEC
 SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = ['email', 'profile']
 SOCIAL_AUTH_JSONFIELD_ENABLED = True
 
+ES_URL = os.environ.get('ES_URL', 'http://localhost:9200')
+ES_INDEX = os.environ.get('ES_INDEX', 'products')
+REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+SEARCH_CACHE_TTL = int(os.environ.get('SEARCH_CACHE_TTL', '60'))
+
 LOGIN_URL = '/web/login/'
 LOGIN_REDIRECT_URL = '/web/profile/'
 LOGOUT_REDIRECT_URL = '/web/login/'
@@ -91,6 +96,7 @@ LOGIN_EXEMPT_URLS = [
     r'^/web/?$',
     r'^/web/login/?$',
     r'^/web/feed/?$',
+    r'^/web/search/?$',
     r'^/web/products/\d+/?$',
     r'^/web/categories/[-\w]+/?$',
     r'^/api/search/?$',

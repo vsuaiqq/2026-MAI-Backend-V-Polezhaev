@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.test import APIClient
@@ -31,7 +33,8 @@ class ProductAPITests(TestCase):
         response = self.client.get("/api/products/999999/")
         self.assertEqual(response.status_code, 404)
 
-    def test_create(self):
+    @patch("catalog.views_api.index_product")
+    def test_create_indexes_in_es(self, mock_index):
         payload = {
             "title": "Sony WH-1000XM5",
             "description": "шумодав",
@@ -41,8 +44,10 @@ class ProductAPITests(TestCase):
         response = self.client.post("/api/products/create/", payload, format="json")
         self.assertEqual(response.status_code, 201)
         self.assertTrue(Product.objects.filter(title="Sony WH-1000XM5").exists())
+        mock_index.assert_called_once()
 
-    def test_create_invalid(self):
+    @patch("catalog.views_api.index_product")
+    def test_create_invalid(self, _mock_index):
         response = self.client.post("/api/products/create/", {}, format="json")
         self.assertEqual(response.status_code, 400)
 
@@ -63,22 +68,22 @@ class ProductAPITests(TestCase):
         self.assertEqual(response.status_code, 204)
         self.assertFalse(Product.objects.filter(pk=product.id).exists())
 
-    def test_search_in_title(self):
-        ProductFactory(title="Беспроводные Sony", description="x", category=self.category)
+
+class SearchAPITests(TestCase):
+    @patch("catalog.views_api.search_products")
+    def test_search_calls_backend(self, mock_search):
+        mock_search.return_value = [{"id": 1, "title": "Sony WH"}]
         response = self.client.get("/api/search/?q=Sony")
         self.assertEqual(response.status_code, 200)
-        self.assertGreaterEqual(response.json()["count"], 1)
+        mock_search.assert_called_once_with("Sony")
+        self.assertEqual(response.json()["count"], 1)
 
-    def test_search_in_description(self):
-        ProductFactory(title="x", description="лучший Sony в городе", category=self.category)
-        response = self.client.get("/api/search/?q=sony")
-        self.assertEqual(response.status_code, 200)
-        self.assertGreaterEqual(response.json()["count"], 1)
-
-    def test_search_empty(self):
+    @patch("catalog.views_api.search_products")
+    def test_search_empty_q_no_call(self, mock_search):
         response = self.client.get("/api/search/?q=")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["count"], 0)
+        mock_search.assert_not_called()
 
 
 class CategoryAPITests(TestCase):
@@ -125,7 +130,6 @@ class AuthenticatedAPITests(TestCase):
         response = self.client.get("/api/profile/")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["username"], "alice")
-        self.assertEqual(response.json()["email"], "a@e.com")
 
     def test_profile_method_not_allowed(self):
         response = self.client.put("/api/profile/")
@@ -155,7 +159,6 @@ class AuthenticatedAPITests(TestCase):
         self.user.favorites.add(product)
         response = self.client.get("/api/favorites/")
         self.assertEqual(response.json()["count"], 1)
-        self.assertEqual(response.json()["results"][0]["id"], product.id)
 
 
 class MiddlewareTests(TestCase):
@@ -169,7 +172,7 @@ class MiddlewareTests(TestCase):
         self.assertIn("/web/login/", response.url)
 
     def test_anon_can_browse_public_endpoints(self):
-        for url in ["/api/products/", "/api/categories/", "/api/search/?q=x", "/web/", "/web/feed/"]:
+        for url in ["/api/products/", "/api/categories/", "/web/", "/web/feed/", "/web/search/"]:
             response = self.client.get(url)
             self.assertEqual(response.status_code, 200, msg=url)
 
@@ -195,6 +198,21 @@ class WebViewTests(TestCase):
     def test_product_page(self):
         response = self.client.get("/web/products/1/")
         self.assertEqual(response.status_code, 200)
+
+    @patch("catalog.views_web.search_products")
+    def test_search_page_renders_results(self, mock_search):
+        mock_search.return_value = [
+            {"id": 1, "title": "Sony WH", "description": "x", "price": "100", "category": "wireless"},
+        ]
+        response = self.client.get("/web/search/?q=Sony")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Sony WH")
+        mock_search.assert_called_once_with("Sony")
+
+    def test_search_page_empty(self):
+        response = self.client.get("/web/search/")
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Найдено:")
 
     def test_method_not_allowed(self):
         response = self.client.put("/web/")

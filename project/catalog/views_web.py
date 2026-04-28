@@ -2,11 +2,25 @@ from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
+from .search_backend import search_products
+
 
 @csrf_exempt
 @require_http_methods(["GET"])
 def home(request):
     return render(request, "catalog/home.html")
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def search_page(request):
+    q = (request.GET.get("q") or "").strip()
+    results = search_products(q) if q else []
+    return render(
+        request,
+        "catalog/search.html",
+        {"q": q, "count": len(results), "results": results},
+    )
 
 
 @csrf_exempt

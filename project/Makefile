@@ -16,6 +16,9 @@ migrate:
 makemigrations:
 	docker compose run --rm web python manage.py makemigrations
 
+seed:
+	docker compose run --rm web python manage.py seed
+
 logs:
 	docker compose logs -f
 
