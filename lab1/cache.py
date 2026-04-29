@@ -1,25 +1,23 @@
+from collections import OrderedDict
+
 class LRUCache:
-    def __init__(self, capacity: int = 10):
-        if capacity <= 0:
-            raise ValueError("capacity must be positive")
+    def __init__(self, capacity=10):
         self.capacity = capacity
-        self._data: dict[str, str] = {}
+        self._data = OrderedDict()
 
-    def get(self, key: str):
-        value = self._data.pop(key, None)
-        if value is None:
+    def get(self, key):
+        if key not in self._data:
             return ""
-        self._data[key] = value
-        return value
+        self._data.move_to_end(key)
+        return self._data[key]
 
-    def set(self, key: str, value: str):
+    def set(self, key, value):
         if key in self._data:
-            self._data.pop(key, None)
+            self._data.move_to_end(key)
         self._data[key] = value
 
         if len(self._data) > self.capacity:
-            lru_key = next(iter(self._data))
-            self._data.pop(lru_key, None)
+            self._data.popitem(last=False)
 
-    def rem(self, key: str):
+    def rem(self, key):
         self._data.pop(key, None)

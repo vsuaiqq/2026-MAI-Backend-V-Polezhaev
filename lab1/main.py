@@ -9,6 +9,7 @@ def main():
     assert cache.get("Jesse") == "James"
     cache.rem("Walter")
     assert cache.get("Walter") == ""
+    print('ok')
 
 
 if __name__ == "__main__":
